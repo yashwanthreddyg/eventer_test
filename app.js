@@ -12,18 +12,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 var eventDict = {
-    'my.sample.package.SAMPLE_EVENT1':{
-        emitters:["localhost:1212"],
-        listeners:["localhost:2121","localhost:3121"]
-    },
-    'my.sample.package.SAMPLE_EVENT2':{
-        emitters:["localhost:1212"],
-        listeners:["localhost:2121","localhost:3121"]
-    },
-    'my.sample.package.SAMPLE_EVENT3':{
-        emitters:["localhost:1212"],
-        listeners:["localhost:2121","localhost:3121"]
-    }
+    
 }
 
 app.get('/', function (req, res) {
@@ -40,19 +29,15 @@ app.get('/emitters/:evid', function (req, res) {
 app.post('/register',function(req,res){
     var reqBody = req.body;
     var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    var eventName = reqBody.event;
-    if(reqBody.event){
-      if(eventName){
-        eventDict[eventName].emitters.push(ip);
-      }
-      else{
-        eventDict[eventName].emitters = [ip];
-        eventDict[eventName].listeners = [];
-      }
-      res.status(204).send();
+    var emitList = reqBody.emitlist;
+    var listenList = reqBody.listenlist;
+    if(emitList){
+      for(var event of emitList)
+        addEmitter(event,ip);
     }
-    else{
-      res.status(400).send();
+    if(listenList){
+     for(var event of listenList)
+        addListener(event,ip); 
     }
 });
 
@@ -66,3 +51,33 @@ app.use(function(req, res, next) {
 app.listen(3000, function () {
   console.log('Example app listening on port 3000!');
 });
+
+//helpers
+function addEmitter(eventName,emitter){
+  if(eventDict[eventName]){
+    if(eventDict[eventName].emitters.includes(emitter))
+      return true;
+    eventDict[eventName].emitters.push(emitter);
+    return true;
+  }
+  else{
+    eventDict[eventName] = {
+      emitters:[emitter],
+      listeners:[]
+    }
+  }
+}
+function addListener(eventName,listener){
+  if(eventDict[eventName]){
+    if(eventDict[eventName].listeners.includes(listener))
+      return true;
+    eventDict[eventName].listeners.push(listener);
+    return true;
+  }
+  else{
+    eventDict[eventName] = {
+      emitters:[],
+      listeners:[listener]
+    }
+  }
+}
